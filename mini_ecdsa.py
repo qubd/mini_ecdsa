@@ -1,3 +1,7 @@
+#Elliptic curve basics, tools for finding rational points, and ECDSA implementation.
+
+#Brendan Cordy, 2015
+
 from fractions import Fraction
 from random import randrange
 

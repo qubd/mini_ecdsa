@@ -20,7 +20,7 @@ C = Curve(0,1,2,0)
 C.torsion_group()
 ```
 
-You'll see that it's a cyclic group of order four, as well as the coordinates of all the torsion points. You can also add points, multiply them scalars, and so on. Try defining some points (make sure they're actually points on the curve) and messing around.
+You'll see that it's a cyclic group of order four, as well as the coordinates of all the torsion points. You can also add points, multiply them by scalars, and so on. Try defining some points (make sure they're actually points on the curve) and messing around.
 
 ```
 C = Curve(0,1,2,0)
