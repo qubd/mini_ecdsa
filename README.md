@@ -52,6 +52,6 @@ We can then verify that the message is authentic.
 verify(m,C,P,order(P),S)
 ```
 
-If you modify the message m in some way before verify it, the verification procedure will (with very high probability) return False.
+If you modify the message m in some way before verifying it, the verification procedure will (with very high probability) return False.
 
 
