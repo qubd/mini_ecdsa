@@ -3,9 +3,9 @@ mini_ecdsa
 
 Basics of elliptic curves and ECDSA in Python.
 
-*Disclaimer*: There is a lot of brute forcing going on here. This is definitely a *low performance* crytography package.
+*Disclaimer*: There is a lot of brute forcing going on here. This is a *low performance* cryptography package not intended for actual use.
 
-To use it, start by defining a Weierstrass curve over a field of characteristic p, or over the rationals. For example, let's say you want to play with the curve `y^2 = x^3 + 2x^2 + 1` over `F_7`.
+Start by defining a Weierstrass curve over a field of characteristic p, or over the rationals. For example, let's say you want to play with the curve y^2 = x^3 + 2x^2 + 1 over F_7.
 
 ```
 C = Curve(2,0,1,7)
@@ -13,7 +13,7 @@ C = Curve(2,0,1,7)
 
 To see a list of all the points on the curve, use `C.show_points()`. This will produce a pretty printed set of points. To return a list of point objects, use `C.get_points()`.
 
-If you want to work over the rational numbers and see the finite order rational points on the curve (torsion points), use a 0 in the last argument when you define the curve. First define the curve, and then call 'C.torsion_group()'. *Warning:* Attempting to find the torsion points on a curve over Q will fill your machine's memory up and cause it to hang unless C has a very small discriminant, so be careful. Let's say we want to see the group of torsion points on the curve `y^2 = x^3 + x + 2`.
+If you want to work over the rational numbers and see the finite order rational points on the curve (torsion points), use a 0 in the last argument when you define the curve. First define the curve, and then call `C.torsion_group()`. *Warning:* Attempting to find the torsion points on a curve over Q will fill your machine's memory up and cause it to hang unless C has a very small discriminant, so be careful. Let's say we want to see the group of torsion points on the curve y^2 = x^3 + x + 2.
 
 ```
 C = Curve(0,1,2,0)
@@ -30,7 +30,7 @@ print C.add(P,Q)
 print C.mult(Q,4)
 ```
 
-To use ECDSA to create digital signatures, we first need to publicly agree on a curve over a prime characteristic field with a distinguished point that generates a prime order subgroup. How about `P = (1341,854)` on `y^2 = x^3 + x + 1` over F_2833. This point generates a subgroup of order 131. You can check that this point is on the curve using `C.contains(P)` and that its order is 131 using `C.order(P)`.
+To use ECDSA to create digital signatures, we first need to publicly agree on a curve over a prime characteristic field with a distinguished point that generates a prime order subgroup. How about P = (1341,854) on y^2 = x^3 + x + 1 over F_2833. This point generates a subgroup of order 131. You can check that this point is on the curve using `C.contains(P)` and that its order is 131 using `C.order(P)`.
 
 ```
 C = Curve(0,1,1,2833)
