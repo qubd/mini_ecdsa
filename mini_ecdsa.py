@@ -228,9 +228,16 @@ class Curve(object):
             Q = self.add(P,Q)
             orderP += 1
 
-            #If we obtain non integer coordinates, the point must have infinite order.
-            if Q.x != int(Q.x) or Q.y != int(Q.y):
-                return -1
+            #Over the rationals...
+            if(self.char == 0):
+
+                #If we obtain non integer coordinates, the point must have infinite order
+                #by Nagell-Lutz.
+                if Q.x != int(Q.x) or Q.y != int(Q.y):
+                    return -1
+                #All finite order points have order at most 12 by Mazur's theorem.
+                if orderP > 12:
+                    return -1
 
         return orderP
 
