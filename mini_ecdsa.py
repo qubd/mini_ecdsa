@@ -351,8 +351,7 @@ def sign(message, curve, P, n):
     print 'Sig: (' + str(Q) + ', ' + str(r) + ', ' + str(s) + ')'
     return (Q,r,s)
 
-#Verify the the digital signature S for the string message. As above, C, P, and n are all
-#public knowledge.
+#Verify the digital signature S for the string message. As above, C, P, and n are public.
 def verify(message, curve, P, n, S):
 
     Q,r,s = S
