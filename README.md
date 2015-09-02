@@ -34,7 +34,7 @@ To use ECDSA to create digital signatures, we first need to publicly agree on a 
 
 ```
 C = Curve(0,1,1,2833)
-P = Point(-1,0)
+P = Point(1341,854)
 C.contains(P)
 C.order(P)
 ```
@@ -52,6 +52,6 @@ We can then verify that the message is authentic.
 verify(m,C,P,order(P),S)
 ```
 
-If you modify the message m in some way before verifying it, the verification procedure will (with very high probability) return False.
+If you modify the message m in some way before verifying it, the verification procedure will (with very high probability) return False. If the message is authentic, the call above will return True.
 
 
