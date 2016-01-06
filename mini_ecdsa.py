@@ -321,8 +321,8 @@ def mult_inv(a, n):
     else:
         return x % n
 
-#Silly hash function.
-def hash(message,n):
+#Silly hash function, obviously not appropriate for... anything.
+def hash(message, n):
     h = 1
 
     for letter in message:
@@ -332,9 +332,9 @@ def hash(message,n):
 
 #Create a digital signature for the string message using the curve C with a point P which
 #generates a prime order subgroup of size n. C, P, and n are all public knowledge.
-def sign(message, curve, P, n):
-
+def sign(message, curve, P):
     #Create the private-public key pair (d, Q) where Q = dP.
+    n = curve.order(P)
     d = randrange(1, n)
     Q = curve.mult(P, d)
 
@@ -356,7 +356,8 @@ def sign(message, curve, P, n):
     return (Q, r, s)
 
 #Verify the digital signature S for the string message. As above, C, P, and n are public.
-def verify(message, curve, P, n, S):
+def verify(message, curve, P, S):
+    n = curve.order(P)
     Q, r, s = S
 
     #Confirm that Q is on the curve.
