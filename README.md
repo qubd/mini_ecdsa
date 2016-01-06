@@ -3,7 +3,7 @@ mini_ecdsa
 
 Basics of elliptic curves and ECDSA in Python.
 
-*Disclaimer*: There is a lot of brute forcing going on here. This is a *low performance* cryptography package not intended for actual use.
+*Disclaimer*: There is a lot of brute forcing going on here. This is a *low performance* package intended to be helpful to those interested in learning about elliptic curves and ECDSA.
 
 Start by defining a Weierstrass curve over a field of prime characteristic, or over the rationals. For example, let's say you want to know about the curve y^2 = x^3 + 2x^2 + 1 over F_7.
 
