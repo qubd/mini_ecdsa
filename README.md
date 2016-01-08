@@ -3,7 +3,7 @@ mini_ecdsa
 
 Arithmetic on elliptic curves and introduction to ECDSA in Python.
 
-*Disclaimer*: This module is a tool for learning about elliptic curves and elliptic curve cryptography. It provides a fully functional implementation of ECDSA, but don't use it as anything other than a sandbox. Even if the math is correct there are many [important implementation details](http://safecurves.cr.yp.to/index.html) required for private key security not considered here.
+*Disclaimer*: This module is a tool for learning about elliptic curves and elliptic curve cryptography. It provides a fully functional implementation of ECDSA, but don't use it as anything other than a sandbox. Even if the math is correct there are many [subtle and important implementation details](http://safecurves.cr.yp.to/index.html) required for private key security that I haven't even thought about.
 
 Let's start by defining a Weierstrass curve over a field of prime characteristic, or over the rationals. `Curve(a,b,c,p)` will define an elliptic curve with Weierstrass form y^2 = x^3 + ax^2 + bx + c over F_p. `Curve(a,b,c,0)` will define a curve with the same equation over the rationals.
 
@@ -19,7 +19,7 @@ To see a list of all points on the curve, or all finite order rational points fo
 ['Inf', '(0,1)', '(0,6)', '(1,2)', '(1,5)', '(3,2)', '(3,5)', '(5,1)', '(5,6)', '(6,3)', '(6,4)']
 ```
 
-For curves defined over the rational numbers, calling `C.torsion_group()` will classify the group of finite order rational points of the curve, also known as torsion points, as well as displaying these points. *Warning:* This is a work in progress. Attempting to find the torsion points on a curve will fill your machine's memory up and cause it to hang unless the curve has a very small discriminant, so be careful. Let's say we want to see the group of torsion points on the curve y^2 = x^3 + x + 2.
+For curves defined over the rational numbers, calling `C.torsion_group()` will classify the group of finite order rational points on the curve, also known as torsion points, and display them. *Warning:* This is a work in progress. Attempting to find the torsion points on a curve will fill your machine's memory up and cause it to hang unless the curve has a very small discriminant, so be careful. Let's say we want to see the group of torsion points on the curve y^2 = x^3 + x + 2.
 
 ```
 >>> C = Curve(0, 1, 2, 0)
@@ -29,7 +29,7 @@ Z/4Z
 ['Inf', '(-1,0)', '(1,2)', '(1,-2)']
 ```
 
-In this case, the finite order rational points on the curve form a cyclic group of order four. You can also mess around with arithmetic on the curve by adding points, multiplying them by integers (remember multiplication in this context means repeated addition), and so on.
+In this case, the finite order rational points on the curve form a cyclic group of order four. You can also mess around with arithmetic on the curve by adding points and multiplying them by integers (remember multiplication in this context means repeated addition).
 
 ```
 >>> C = Curve(0, 1, 2, 0)
@@ -46,9 +46,9 @@ True
 Inf
 ```
 
-ECDSA is a digital signature scheme which uses elliptic curves. One of its best known uses is in Bitcoin, where spending money amounts to generating a valid ECDSA signature. Any user able to forge ECDSA signatures would become an instant billionaire.
+ECDSA is a digital signature scheme that uses elliptic curves. One of its best known uses is in the Bitcoin protocol, where spending money amounts to generating a valid ECDSA signature. Any user able to forge ECDSA signatures would become an instant billionaire!
 
-To use ECDSA, we need to publicly agree on a curve over a prime characteristic field (any finite field can be used, but this module only works with prime characteristic fields) along with a distinguished point that generates a subgroup of order n, where n is required to be prime. Why prime order? As part of signing process, we'll need to find a multiplicative inverse mod n, and the primality requirement guarantees that will work.
+To use ECDSA, we need to publicly agree on a curve over a prime characteristic field (any finite field can be used, but this module only works with prime characteristic fields) along with a distinguished point that generates a subgroup of order n, where n is required to be prime. Why the prime order requirement? As part of the signing process, we'll need to find a multiplicative inverse mod n, and the primality requirement guarantees this will work.
 
 *Toy Example*: Consider P = (1341,854) on the curve y^2 = x^3 + x + 1 over the field with 2833 elements.
 
@@ -62,7 +62,7 @@ True
 131
 ```
 
-Thus, P is indeed on the curve, and P generates a subgroup of order 131, which is prime, so we can use the curve C with the distinguished point P to sign and verify messages with ECDSA. The curve C, the point P, and the order of P are all public information.
+Thus, P is indeed on the curve, and it generates a subgroup of order 131, which is prime, so we can use the curve C with the distinguished point P to sign and verify messages with ECDSA. The curve C, the point P, and the order of P are all public information.
 
 To sign a message, start by creating a private-public keypair by calling `generate_keypair`. This keypair will consist of a randomly generated positive integer d smaller than the order of P, and a point Q = dP. Computing Q given d and P can be done very quickly, but at the moment, no one knows any effective and generally applicable method of computing d given P and Q. This is the [one-way function](https://en.wikipedia.org/wiki/One-way_function) that provides the theoretical security in all elliptic curve cryptography schemes.
 
@@ -72,7 +72,7 @@ Priv key: d = 71
 Publ key: Q = (1449,1186)
 ```
 
-Digital signatures generated by ECDSA consist of a public key Q as well as two positive integers, r and s, which are smaller than the order of P. These values are computed using the private key d and a hash of the message. In this implementation I used sha256 as the hash function. The signature is returned as a tuple when calling `sign`, and also printed nicely.
+Digital signatures generated by ECDSA consist of a public key Q as well as two positive integers, r and s, which are smaller than the order of P. These values are computed using the private key d and a hash of the message. In this implementation sha256 is the hash function being used. The signature is returned as a tuple when calling `sign`, and also printed nicely.
 
 ```
 >>> msg = 'this is an important message'
@@ -91,7 +91,7 @@ True
 False
 ```
 
-*Big Example*: The curve used to verify Bitcoin transactions is known as secp256k1. In practice, when someone says 'curve' they usually mean an elliptic curve with a distinguished point of a given order. It's not hard to find out the details for secp256k1 with a few minutes of internetting and converting things to decimal.
+*Big Example*: The curve used to verify Bitcoin transactions is known as secp256k1. Often when you hear 'curve' in the context of elliptic curve cryptography it means an elliptic curve with a distinguished point of a given order, typically called the base point. It's not hard to find out the details for secp256k1 with a few minutes of internetting and converting things to decimal.
 
 ```
 >>> C = Curve(0, 0, 7, 2**256-2**32-2**9-2**8-2**7-2**6-2**4-1)
@@ -101,11 +101,11 @@ y^2 = x^3 + 7 over F_11579208923731619542357098500868790785326998466564056403945
 >>> n = 115792089237316195423570985008687907852837564279074904382605163141518161494337
 ```
 
-There are few noteworthy things about the order of P. It's specified, not calculated, which seems strange until you realize that, at least naively, to find the order of a point we need to calculate iP for increasing i until we get the point at infinity. If that was actually feasible, we could crack public keys and recover d from Q in the same way, by calculating iP for increasing i until the result is Q. Calling `C.order(P)` will indeed calculate the order of P in this naive way, so don't do it unless you're prepared to wait a long time, and by long I mean universe ending long.
+There are few noteworthy things about the order of P. It's given, not calculated, which seems unnecessary until you realize that, at least naively, to find the order of a point we need to calculate iP for increasing i until we get the point at infinity. If that was actually feasible, we could crack public keys and recover d from Q in the same way, by calculating iP for increasing i until the result is Q. Calling `C.order(P)` will indeed calculate the order of P in this naive way, so don't do it unless you're prepared to wait a long time, and by long I mean universe ending long.
 
-Also, note how close the order of P is to the size of the field the curve is defined over. If you've studied elliptic curves before and know about the [Hasse bound](https://en.wikipedia.org/wiki/Hasse's_theorem_on_elliptic_curves) along with a little bit of group theory, you should be able to convince yourself that the subgroup generated by P is actually the entire set of points on the curve. This is good, as it makes our keyspace, the set of possible values for d, as large as possible.
+Also, note how close the order of P is to the size of the field the curve is defined over. If you've studied elliptic curves before and know about the [Hasse bound](https://en.wikipedia.org/wiki/Hasse's_theorem_on_elliptic_curves) along with a little bit of group theory, you should be able to convince yourself that the subgroup generated by P is actually the entire set of points on the curve. This is good, as it makes the set of possible values for d as large as possible.
 
-To sign and authenticate messages, we just do the same thing we did in the toy example.
+Generating keypairs, signing, and authenticating are all done exactly as in the earlier example.
 
 ```
 >>> key = generate_keypair(C, P, n)
