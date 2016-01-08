@@ -4,6 +4,7 @@
 
 from fractions import Fraction
 from random import randrange
+from hashlib import sha256
 
 class Point(object):
 
@@ -216,14 +217,28 @@ class Curve(object):
 
             return Point(x,y)
 
-    #Add P to itself k times, i.e., multiply P by k.
-    def mult(self, P, k):
-        if k == 1:
-            return P
-        else:
-            return self.add(P, self.mult(P, k-1))
+    #Double a point on the curve (add it to itself).
+    def double(self, P):
+        return self.add(P,P)
+        print 'doubled'
 
-    #Find the order of a point on the curve.
+    #Add P to itself k times, using the powermod idea, which amounts to repeated additions with doubling.
+    def mult(self, P, k):
+        #Convert k to binary and use repeated additions.
+        b = bin(k)[2:]
+        return self.repeat_additions(P, b, 1)
+
+    def repeat_additions(self, P, b, n):
+        if b == '0':
+            return Point.atInfinity()
+        elif b == '1':
+            return P
+        elif b[-1] == '0':
+            return self.repeat_additions(self.double(P), b[:-1], n+1)
+        elif b[-1] == '1':
+            return self.add(P, self.repeat_additions(self.double(P), b[:-1], n+1))
+
+    #Find the order of a point on the curve by brute force.
     def order(self, P):
         Q = P
         orderP = 1
@@ -321,59 +336,58 @@ def mult_inv(a, n):
     else:
         return x % n
 
-#Silly hash function, obviously not appropriate for... anything.
-def hash(message, n):
-    h = 1
+#Use SHA256 to hash messages.
+def hash(message):
+    return int(sha256(message).hexdigest(), 16)
 
-    for letter in message:
-        h = h * ord(letter) % n
-
-    return h
-
-#Create a digital signature for the string message using the curve C with a point P which
-#generates a prime order subgroup of size n. C, P, and n are all public knowledge.
-def sign(message, curve, P):
+#Create a digital signature for the string message using a given curve with a distinguished
+#point P which generates a prime order subgroup of size n.
+def sign(message, curve, P, n):
     #Create the private-public key pair (d, Q) where Q = dP.
-    n = curve.order(P)
     d = randrange(1, n)
     Q = curve.mult(P, d)
 
-    #Hash the message.
-    z = hash(message, n)
+    #Hash the message, convert to a bitstring, select the leftmost bits to create an positive
+    #integer z which is smaller than n.
+    h = hash(message)
+    b = bin(h)[2:len(bin(n))]
+    z = int(b, 2)
 
-    #Choose a random multiple of P and sign the message with r and s.
+    #Choose a random multiple of P and sign the message with Q, r, and s.
     r = 0
     s = 0
     while r == 0 or s == 0:
-
         k = randrange(1, n)
         R = curve.mult(P, k)
-
         r = R.x % n
         s = (mult_inv(k, n) * (z + r*d)) % n
 
     print 'Sig: (' + str(Q) + ', ' + str(r) + ', ' + str(s) + ')'
     return (Q, r, s)
 
-#Verify the digital signature S for the string message. As above, C, P, and n are public.
-def verify(message, curve, P, S):
-    n = curve.order(P)
+#Verify the string message is authentic, given an ECDSA signature generated using a curve with
+#a distinguished point P that generates a prime order subgroup of size n.
+def verify(message, curve, P, n, S):
     Q, r, s = S
 
     #Confirm that Q is on the curve.
     if Q.inf or not curve.contains(Q):
         return False
 
-    #Confirm that Q has order less than or equal to the order of P.
-    if curve.order(Q) > n:
+    #Confirm that Q has order that divides n.
+    if not curve.mult(Q,n) == Point.atInfinity():
         return False
 
     #Confirm that r and s are at least in the acceptable range.
-    if r not in range(1,n) or s not in range(1,n):
+    if r > n or s > n:
         return False
 
-    #Verify the signature is valid.
-    z = hash(message, n)
+    #Hash the message, convert to a bitstring, select the leftmost bits to create an positive
+    #integer z which is smaller than n.
+    h = hash(message)
+    b = bin(h)[2:len(bin(n))]
+    z = int(b, 2)
+
     w = mult_inv(s, n) % n
     u_1 = z * w % n
     u_2 = r * w % n
