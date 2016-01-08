@@ -32,6 +32,9 @@ class Point(object):
         else:
             return self.x == other.x and self.y == other.y
 
+    def is_infinite(self):
+        return self.inf
+
 class Curve(object):
     #Construct a Weierstrass cubic y^2 = x^3 + ax^2 + bx + c over a field of prime
     #characteristic, or over the rationals (characteristic zero). Print to confirm.
@@ -213,12 +216,21 @@ class Curve(object):
     def double(self, P):
         return self.add(P,P)
 
-    #Add P to itself k times, using the powermod idea, which amounts to repeated additions with doubling.
+    #Add P to itself k times.
     def mult(self, P, k):
-        #Convert k to binary and use repeated additions.
-        b = bin(k)[2:]
-        return self.repeat_additions(P, b, 1)
+        if P.is_infinite():
+            return P
+        elif k == 0:
+            return Point.atInfinity()
+        elif k < 0:
+            return self.mult(Point(P.x,-P.y % self.char), -k)
+        else:
+            #Convert k to a bitstring and use repeated doubling to compute the product quickly.
+            b = bin(k)[2:]
+            return self.repeat_additions(P, b, 1)
 
+    #Add efficiently by repeatedly doubling the given point, and adding the result to a running
+    #total if, after i doublings, the ith digit in the bitstring b is a one.
     def repeat_additions(self, P, b, n):
         if b == '0':
             return Point.atInfinity()
@@ -264,7 +276,7 @@ class Curve(object):
         orbit = [str(Point.atInfinity())]
 
         #Repeatedly add P to Q, appending each (pretty printed) result.
-        while not Q == Point.atInfinity():
+        while not Q.is_infinite():
             orbit.append(str(Q))
             Q = self.add(P,Q)
 
@@ -357,7 +369,7 @@ def sign(message, curve, P, n, keypair):
         r = R.x % n
         s = (mult_inv(k, n) * (z + r*d)) % n
 
-    print 'Sig: (' + str(Q) + ', ' + str(r) + ', ' + str(s) + ')'
+    print 'ECDSA sig: (' + str(Q) + ', ' + str(r) + ', ' + str(s) + ')'
     return (Q, r, s)
 
 #Verify the string message is authentic, given an ECDSA signature generated using a curve with
@@ -370,7 +382,7 @@ def verify(message, curve, P, n, sig):
         return False
 
     #Confirm that Q has order that divides n.
-    if not curve.mult(Q,n) == Point.atInfinity():
+    if not curve.mult(Q,n).is_infinite():
         return False
 
     #Confirm that r and s are at least in the acceptable range.
