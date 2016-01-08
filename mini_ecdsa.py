@@ -1,5 +1,4 @@
 #Elliptic curve basics, tools for finding rational points, and ECDSA implementation.
-
 #Brendan Cordy, 2015
 
 from fractions import Fraction
@@ -7,11 +6,9 @@ from random import randrange
 from hashlib import sha256
 
 class Point(object):
-
     #Construct a point with two given coordindates.
     def __init__(self, x, y):
-        self.x = x
-        self.y = y
+        self.x, self.y = x, y
         self.inf = False
 
     #Construct the point at infinity.
@@ -36,13 +33,10 @@ class Point(object):
             return self.x == other.x and self.y == other.y
 
 class Curve(object):
-
     #Construct a Weierstrass cubic y^2 = x^3 + ax^2 + bx + c over a field of prime
     #characteristic, or over the rationals (characteristic zero). Print to confirm.
     def __init__(self, a, b, c, char):
-        self.a = a
-        self.b = b
-        self.c = c
+        self.a, self.b, self.c = a, b, c
         self.char = char
         print(self)
 
@@ -87,9 +81,7 @@ class Curve(object):
 
     #Compute the discriminant.
     def discriminant(self):
-        a = self.a
-        b = self.b
-        c = self.c
+        a = self.a, b = self.b, c = self.c
         return -4*a*a*a*c + a*a*b*b + 18*a*b*c - 4*b*b*b - 27*c*c
 
     #Is the point P on the curve?
@@ -220,7 +212,6 @@ class Curve(object):
     #Double a point on the curve (add it to itself).
     def double(self, P):
         return self.add(P,P)
-        print 'doubled'
 
     #Add P to itself k times, using the powermod idea, which amounts to repeated additions with doubling.
     def mult(self, P, k):
@@ -304,12 +295,10 @@ class Curve(object):
 #List all integer divisors of a number.
 def divisors(n):
     divs = [0]
-
     for i in range(1, abs(n) + 1):
         if n % i == 0:
             divs.append(i)
             divs.append(-i)
-
     return divs
 
 #Extended Euclidean algorithm.
@@ -325,10 +314,9 @@ def euclid(a, b):
         #in terms of larger ones.
         return (g, x - (b//a)*y, y)
 
-#Compute multiplicative inverses modulo n.
+#Compute multiplicative inverses mod n.
 def mult_inv(a, n):
     g, x, y = euclid(a, n)
-
     #If gcd(a,n) is not one, then a has no multiplicative inverse.
     if g != 1:
         raise ValueError('multiplicative inverse does not exist')
@@ -336,26 +324,33 @@ def mult_inv(a, n):
     else:
         return x % n
 
-#Use SHA256 to hash messages.
+#Use sha256 to hash a message, and return the hash value as an interger.
 def hash(message):
     return int(sha256(message).hexdigest(), 16)
 
-#Create a digital signature for the string message using a given curve with a distinguished
-#point P which generates a prime order subgroup of size n.
-def sign(message, curve, P, n):
-    #Create the private-public key pair (d, Q) where Q = dP.
+#Generate a keypair using the point P of order n on the given curve. The priveate key is a
+#positive integer d smaller than n, and the public key is Q = dP.
+def generate_keypair(curve, P, n):
     d = randrange(1, n)
     Q = curve.mult(P, d)
+    print "Priv key: " + str(d)
+    print "Publ key: " + str(Q)
+    return (d, Q)
 
-    #Hash the message, convert to a bitstring, select the leftmost bits to create an positive
-    #integer z which is smaller than n.
+#Create a digital signature for the string message using a given curve with a distinguished
+#point P which generates a prime order subgroup of size n.
+def sign(message, curve, P, n, keypair):
+    #Extract the private and public keys from the keypair.
+    (d, Q) = keypair
+
+    #Hash the message, convert the hash value to a bitstring, take only the L leftmost bits,
+    #where L is the bit length of n, and convert that bitstring to an integer.
     h = hash(message)
     b = bin(h)[2:len(bin(n))]
     z = int(b, 2)
 
     #Choose a random multiple of P and sign the message with Q, r, and s.
-    r = 0
-    s = 0
+    r, s = 0, 0
     while r == 0 or s == 0:
         k = randrange(1, n)
         R = curve.mult(P, k)
@@ -367,8 +362,8 @@ def sign(message, curve, P, n):
 
 #Verify the string message is authentic, given an ECDSA signature generated using a curve with
 #a distinguished point P that generates a prime order subgroup of size n.
-def verify(message, curve, P, n, S):
-    Q, r, s = S
+def verify(message, curve, P, n, sig):
+    Q, r, s = sig
 
     #Confirm that Q is on the curve.
     if Q.inf or not curve.contains(Q):
