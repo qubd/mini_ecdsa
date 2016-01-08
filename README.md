@@ -119,3 +119,7 @@ True
 >>> verify('this is a faked important message', C, P, n, sig)
 False
 ```
+
+When you see these numbers in the wild, they are typically given in hex. In the case of Bitcoin, the private key d is stored in hex in a Bitcoin wallet, and the public key Q goes through a [hashing procedure](https://en.bitcoin.it/wiki/Technical_background_of_version_1_Bitcoin_addresses) and gets converted to base 58, resulting in a Bitcoin address.
+
+Now you really know what a Bitcoin address is! It's a point on the elliptic curve y^2 = x^3 + 7 over a really big finite field after being eaten by sha256 a few times and converted to base 58. Cool.
