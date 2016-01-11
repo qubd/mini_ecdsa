@@ -2,8 +2,10 @@
 #Brendan Cordy, 2015
 
 from fractions import Fraction
+from math import ceil, sqrt
 from random import randrange
 from hashlib import sha256
+from time import clock
 
 class Point(object):
     #Construct a point with two given coordindates.
@@ -34,6 +36,12 @@ class Point(object):
 
     def is_infinite(self):
         return self.inf
+
+    def negative(self):
+        if self.is_infinite():
+            return self
+        else:
+            return Point(self.x,-self.y)
 
 class Curve(object):
     #Construct a Weierstrass cubic y^2 = x^3 + ax^2 + bx + c over a field of prime
@@ -245,13 +253,10 @@ class Curve(object):
     def order(self, P):
         Q = P
         orderP = 1
-
         #Add P to Q repeatedly until obtaining the identity (point at infinity).
         while not Q.inf:
             Q = self.add(P,Q)
             orderP += 1
-
-            #Over the rationals...
             if self.char == 0:
                 #If we ever obtain non integer coordinates, the point must have infinite order
                 #by Nagell-Lutz.
@@ -274,7 +279,6 @@ class Curve(object):
     def generate(self, P):
         Q = P
         orbit = [str(Point.atInfinity())]
-
         #Repeatedly add P to Q, appending each (pretty printed) result.
         while not Q.is_infinite():
             orbit.append(str(Q))
@@ -409,12 +413,77 @@ def verify(message, curve, P, n, sig):
 
 #Find d for which Q = dP by simply trying all possibilities
 def crack_brute_force(curve, P, n, Q):
+    start_time = clock()
     for d in range(n):
         if curve.mult(P,d) == Q:
+            end_time = clock()
             print "Priv key: d = " + str(d)
+            print str(end_time - start_time) + " secs"
+
+#Find d for which Q = dP using the baby-step giant-step algortihm.
+def crack_baby_giant(curve, P, n, Q):
+    start_time = clock()
+    m = int(ceil(sqrt(n)))
+    #Build a hash table with all bP with 0 < b < m using a dictionary. The dicitonary value
+    #stores b so that it can be quickly recovered after a matching giant step hash.
+    baby_table = {}
+    for b in range(m):
+        bP = curve.mult(P,b)
+        baby_table[str(bP)] = b
+    #Check if Q - gmP is in the hash table for all 0 < g < m. If we get such a matching hash,
+    #we have Q - gmP = bP, so extract b from the dictionary, then Q = (b + gm)P.
+    for g in range(m):
+        R = curve.add(Q, (curve.mult(P, g*m)).negative())
+        if str(R) in baby_table.keys():
+            b = baby_table[str(R)]
+            end_time = clock()
+            print "Priv key: d = " + str((b + g*m) % n)
+            print str(end_time - start_time) + " secs"
+
+#Find d for which Q = dP using Pollard's rho algorithm.
+def crack_rho(curve, P, n, Q, bits):
+    start_time = clock()
+    R_list = []
+    #Compute 2^bits randomly selected linear combinations of P and Q, storing them as triples
+    #of the form (aP + bQ, a, b) in R_list.
+    for i in range(2**bits):
+        a, b = randrange(0,n), randrange(0,n)
+        R_list.append((curve.add(curve.mult(P,a), curve.mult(Q,b)), a, b))
+
+    #Compute a new random linear combination of P and Q to start the cycle-finding.
+    aT, bT = randrange(0,n), randrange(0,n)
+    aH, bH = aT, bT
+    T = curve.add(curve.mult(P,aT), curve.mult(Q,bT))
+    H = curve.add(curve.mult(P,aH), curve.mult(Q,bH))
+
+    while True:
+        #Advance the tortoise one step, by adding a point in R_list determined by the last b
+        #bits in the binary explansion of the x coordinate of the current position.
+        j = int(bin(T.x)[len(bin(T.x)) - bits : len(bin(T.x))], 2)
+        T, aT, bT = curve.add(T, R_list[j][0]), (aT + R_list[j][1]) % n, (bT + R_list[j][2]) % n
+
+        #Advance the hare two steps, again by adding points in R_list determined by the last
+        #b bits in the binary explansion of the x coordinate of the current position.
+        for i in range(2):
+            j = int(bin(H.x)[len(bin(H.x)) - bits : len(bin(H.x))], 2)
+            H, aH, bH = curve.add(H, R_list[j][0]), (aH + R_list[j][1]) % n, (bH + R_list[j][2]) % n
+
+        #If the tortoise and hare arrive at the same point, a cycle has been found.
+        if(T == H):
+            break
+
+    #It is possible that the tortoise and hare arrive at exactly the same linear combination.
+    if bH == bT:
+        end_time = clock()
+        print "Rho failed with identical linear combinations"
+        print str(end_time - start_time) + " secs"
+    else:
+        end_time = clock()
+        print "Priv key: d = " + str((aT - aH) * mult_inv((bH - bT) % n, n) % n)
+        print str(end_time - start_time) + " secs"
 
 #Find d by exploiting two messages signed with the same value of k.
-def crack_ECDSA_from_repeated_k(curve, P, n, m1, sig1, m2, sig2):
+def crack_from_ECDSA_repeat_k(curve, P, n, m1, sig1, m2, sig2):
     Q1, r1, s1 = sig1
     Q2, r2, s2 = sig2
 
