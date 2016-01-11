@@ -212,7 +212,7 @@ class Curve(object):
 
             return Point(x,y)
 
-    #Double a point on the curve (add it to itself).
+    #Double a point on the curve.
     def double(self, P):
         return self.add(P,P)
 
@@ -230,7 +230,7 @@ class Curve(object):
             return self.repeat_additions(P, b, 1)
 
     #Add efficiently by repeatedly doubling the given point, and adding the result to a running
-    #total if, after i doublings, the ith digit in the bitstring b is a one.
+    #total when, after the i doubling, the ith digit in the bitstring b is a one.
     def repeat_additions(self, P, b, n):
         if b == '0':
             return Point.atInfinity()
@@ -263,7 +263,7 @@ class Curve(object):
 
         return orderP
 
-    #Check if a point known to be on the curve has finite order.
+    #Check if a point on the curve has finite order.
     def has_finite_order(self, P):
         if self.char == 0:
             return not self.order(P) == -1
@@ -304,7 +304,8 @@ class Curve(object):
 
             print C.show_points()
 
-#List all integer divisors of a number.
+#Number Theoretic Functions ----------------------------------------------------------------------
+
 def divisors(n):
     divs = [0]
     for i in range(1, abs(n) + 1):
@@ -326,7 +327,7 @@ def euclid(a, b):
         #in terms of larger ones.
         return (g, x - (b//a)*y, y)
 
-#Compute multiplicative inverses mod n.
+#Compute the multiplicative inverse mod n of a with 0 < a < n.
 def mult_inv(a, n):
     g, x, y = euclid(a, n)
     #If gcd(a,n) is not one, then a has no multiplicative inverse.
@@ -336,32 +337,36 @@ def mult_inv(a, n):
     else:
         return x % n
 
+#ECDSA functions ---------------------------------------------------------------------------------
+
 #Use sha256 to hash a message, and return the hash value as an interger.
 def hash(message):
     return int(sha256(message).hexdigest(), 16)
+
+#Hash the message and return integer whose binary representation is the the L leftmost bits
+#of the hash value, where L is the bit length of n.
+def hash_and_truncate(message, n):
+    h = hash(message)
+    b = bin(h)[2:len(bin(n))]
+    return int(b, 2)
 
 #Generate a keypair using the point P of order n on the given curve. The priveate key is a
 #positive integer d smaller than n, and the public key is Q = dP.
 def generate_keypair(curve, P, n):
     d = randrange(1, n)
     Q = curve.mult(P, d)
-    print "Priv key: " + str(d)
-    print "Publ key: " + str(Q)
+    print "Priv key: d = " + str(d)
+    print "Publ key: Q = " + str(Q)
     return (d, Q)
 
 #Create a digital signature for the string message using a given curve with a distinguished
 #point P which generates a prime order subgroup of size n.
 def sign(message, curve, P, n, keypair):
-    #Extract the private and public keys from the keypair.
-    (d, Q) = keypair
+    #Extract the private and public keys, and compute z by hashing the message.
+    d, Q = keypair
+    z = hash_and_truncate(message, n)
 
-    #Hash the message, convert the hash value to a bitstring, take only the L leftmost bits,
-    #where L is the bit length of n, and convert that bitstring to an integer.
-    h = hash(message)
-    b = bin(h)[2:len(bin(n))]
-    z = int(b, 2)
-
-    #Choose a random multiple of P and sign the message with Q, r, and s.
+    #Choose a randomly selected secret point kP then compute r and s.
     r, s = 0, 0
     while r == 0 or s == 0:
         k = randrange(1, n)
@@ -369,7 +374,7 @@ def sign(message, curve, P, n, keypair):
         r = R.x % n
         s = (mult_inv(k, n) * (z + r*d)) % n
 
-    print 'ECDSA sig: (' + str(Q) + ', ' + str(r) + ', ' + str(s) + ')'
+    print 'ECDSA sig: (Q, r, s) = (' + str(Q) + ', ' + str(r) + ', ' + str(s) + ')'
     return (Q, r, s)
 
 #Verify the string message is authentic, given an ECDSA signature generated using a curve with
@@ -380,20 +385,15 @@ def verify(message, curve, P, n, sig):
     #Confirm that Q is on the curve.
     if Q.inf or not curve.contains(Q):
         return False
-
     #Confirm that Q has order that divides n.
     if not curve.mult(Q,n).is_infinite():
         return False
-
     #Confirm that r and s are at least in the acceptable range.
     if r > n or s > n:
         return False
 
-    #Hash the message, convert to a bitstring, select the leftmost bits to create an positive
-    #integer z which is smaller than n.
-    h = hash(message)
-    b = bin(h)[2:len(bin(n))]
-    z = int(b, 2)
+    #Compute z in the same manner used in the signing procedure.
+    z = hash_and_truncate(message, n)
 
     w = mult_inv(s, n) % n
     u_1 = z * w % n
@@ -401,6 +401,33 @@ def verify(message, curve, P, n, sig):
 
     C_1 = curve.mult(P, u_1)
     C_2 = curve.mult(Q, u_2)
-
     C = curve.add(C_1, C_2)
+
     return r % n == C.x % n
+
+#Key Cracking Functions --------------------------------------------------------------------------
+
+#Find d for which Q = dP by simply trying all possibilities
+def crack_brute_force(curve, P, n, Q):
+    for d in range(n):
+        if curve.mult(P,d) == Q:
+            print "Priv key: d = " + str(d)
+
+#Find d by exploiting two messages signed with the same value of k.
+def crack_ECDSA_from_repeated_k(curve, P, n, m1, sig1, m2, sig2):
+    Q1, r1, s1 = sig1
+    Q2, r2, s2 = sig2
+
+    #Check that the two messages were signed with the same k. This check may pass even if m1
+    #and m2 were signed with distinct k, in which case the value of d computed below will be
+    #wrong, but this is a very unlikely scenario.
+    if not r1 == r2:
+        print "Messages signed with distinct k"
+    else:
+        z1 = hash_and_truncate(m1, n)
+        z2 = hash_and_truncate(m2, n)
+
+        k = (z1 - z2) * mult_inv((s1 - s2) % n, n) % n
+        d = mult_inv(r1, n) * ((s1 * k) % n - z1) % n
+
+        print "Priv key: d = " + str(d)
