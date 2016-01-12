@@ -92,7 +92,7 @@ class Curve(object):
 
     #Compute the discriminant.
     def discriminant(self):
-        a = self.a, b = self.b, c = self.c
+        a, b, c = self.a, self.b, self.c
         return -4*a*a*a*c + a*a*b*b + 18*a*b*c - 4*b*b*b - 27*c*c
 
     #Is the point P on the curve?
@@ -418,7 +418,8 @@ def crack_brute_force(curve, P, n, Q):
         if curve.mult(P,d) == Q:
             end_time = clock()
             print "Priv key: d = " + str(d)
-            print str(end_time - start_time) + " secs"
+            print "Time: " + str(round(end_time - start_time, 3)) + " secs"
+            break
 
 #Find d for which Q = dP using the baby-step giant-step algortihm.
 def crack_baby_giant(curve, P, n, Q):
@@ -438,7 +439,8 @@ def crack_baby_giant(curve, P, n, Q):
             b = baby_table[str(R)]
             end_time = clock()
             print "Priv key: d = " + str((b + g*m) % n)
-            print str(end_time - start_time) + " secs"
+            print "Time: " + str(round(end_time - start_time, 3)) + " secs"
+            break
 
 #Find d for which Q = dP using Pollard's rho algorithm.
 def crack_rho(curve, P, n, Q, bits):
@@ -480,7 +482,7 @@ def crack_rho(curve, P, n, Q, bits):
     else:
         end_time = clock()
         print "Priv key: d = " + str((aT - aH) * mult_inv((bH - bT) % n, n) % n)
-        print str(end_time - start_time) + " secs"
+        print "Time: " + str(round(end_time - start_time, 3)) + " secs"
 
 #Find d by exploiting two messages signed with the same value of k.
 def crack_from_ECDSA_repeat_k(curve, P, n, m1, sig1, m2, sig2):
