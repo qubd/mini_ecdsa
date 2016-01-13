@@ -3,18 +3,18 @@ mini_ecdsa
 
 Arithmetic on elliptic curves and introduction to ECDSA in Python.
 
-*Disclaimer*: This module is a tool for learning about elliptic curves and elliptic curve cryptography. It provides a fully functional implementation of ECDSA, but don't use it as anything other than a sandbox. Even if the math is correct there are many [subtle and important implementation details](http://safecurves.cr.yp.to/index.html) required for private key security that I haven't even thought about.
+*Disclaimer*: This module is a tool for learning about elliptic curves and elliptic curve cryptography. It provides a fully functional implementation of ECDSA, but don't use it as anything other than a sandbox. Even if the math is correct there are many [subtle and important implementation details](http://safecurves.cr.yp.to/index.html) required for private key security that I haven't thought about.
 
 You can find a really nice introduction to elliptic curve cryptography on [Andrea Corbelli's blog](http://andrea.corbellini.name/2015/05/17/elliptic-curve-cryptography-a-gentle-introduction/).
 
-Let's start by defining a Weierstrass curve over a field of prime characteristic, or over the rationals. `Curve(a,b,c,p)` will define an elliptic curve with Weierstrass form y^2 = x^3 + ax^2 + bx + c over F_p. `Curve(a,b,c,0)` will define a curve with the same equation over the rationals.
+To use this module, start by defining a Weierstrass curve over a field of prime characteristic, or over the rationals. `Curve(a,b,c,p)` will define an elliptic curve with Weierstrass form y^2 = x^3 + ax^2 + bx + c over F_p. `Curve(a,b,c,0)` will define a curve with the same equation over the rationals.
 
 ```
 >>> C = Curve(2, 0, 1, 7)
 y^2 = x^3 + 2x^2 + 1 over F_7
 ```
 
-To see a list of all points on the curve, or all finite order rational points for curves defined over Q, use `C.show_points()`. This will produce a pretty printed set of points. To return a list of point objects, use `C.get_points()`.
+To see a list of all points on the curve, or all finite order rational points for curves defined over Q, use `C.show_points()`. This will produce a nicely printed set of points. To return a list of point objects, use `C.get_points()`.
 
 ```
 >>> C.show_points()
@@ -50,9 +50,9 @@ Inf
 ['Inf', '(-1,0)', '(1,2)', '(1,-2)']
 ```
 
-ECDSA is a digital signature scheme that uses elliptic curves. If you type in google.com and click the little green lock in your url bar, you'll see that your browser is using ECDSA as part of the https protocol. One of its best known uses is in Bitcoin, where spending money amounts to generating a valid ECDSA signature. Any user able to forge ECDSA signatures would become an instant billionaire!
+ECDSA is a digital signature scheme that uses elliptic curves. If head over to google.com and click the little green lock in your url bar, you'll see that your browser authenticated that page using ECDSA. One of its best known uses is in Bitcoin, where spending money amounts to generating a valid ECDSA signature. Any user able to efficiently forge signatures would become an instant billionaire!
 
-To use ECDSA, we need to publicly agree on a curve over a prime characteristic field (any finite field can be used, but this module only works with prime characteristic fields) along with a distinguished point that generates a subgroup of order n, where n is required to be prime. Why the prime order requirement? As part of the signing process, we'll need to find a multiplicative inverse mod n, and the primality requirement guarantees this will work.
+To use ECDSA, we need to publicly agree on a curve over a prime characteristic field (in theory any finite field can be used, but this module works exclusively with prime characteristic fields, and only these tend to be used in practice) along with a distinguished point that generates a subgroup of order n, which is again required to be prime. Why the prime order requirement on the subgroup? As part of the signing process, we'll need to find a multiplicative inverse mod n, and the prime order requirement guarantees this will work.
 
 *Toy Example*: Consider P = (1341,854) on the curve y^2 = x^3 + x + 1 over the field with 2833 elements.
 
@@ -68,7 +68,7 @@ True
 
 Thus, P is indeed on the curve, and it generates a subgroup of order 131, which is prime, so we can use the curve C with the distinguished point P to sign and verify messages with ECDSA. The curve C, the point P, and the order of P are all public information.
 
-To sign a message, start by creating a private-public keypair by calling `generate_keypair`. This keypair will consist of a randomly generated positive integer d smaller than the order of P, and a point Q = dP. Computing Q given d and P can be done very quickly, but at the moment, no one knows any effective and generally applicable method of computing d given P and Q. This is the [one-way function](https://en.wikipedia.org/wiki/One-way_function) that provides the theoretical security in all elliptic curve cryptography schemes.
+To sign a message, create a private-public keypair by calling `generate_keypair`. This keypair will consist of a randomly generated positive integer d smaller than the order of P, and a point Q = dP. The pair is returned as a tuple and printed. Computing Q given d and P can be done very quickly, but at the moment, no one knows any effective and generally applicable method of computing d given P and Q. This is the [one-way function](https://en.wikipedia.org/wiki/One-way_function) that provides the theoretical security in all elliptic curve based cryptography.
 
 ```
 >>> key = generate_keypair(C, P, 131)
@@ -76,7 +76,7 @@ Priv key: d = 71
 Publ key: Q = (1449,1186)
 ```
 
-Digital signatures generated by ECDSA consist of a public key Q as well as two positive integers, r and s, which are smaller than the order of P. These values are computed using the private key d and a hash of the message. In this implementation sha256 is the hash function being used. The signature is returned as a tuple when calling `sign`, and also printed nicely.
+Digital signatures generated by ECDSA consist of a public key Q as well as two positive integers, r and s, which are smaller than the order of P. These values are computed using the private key d and a hash of the message. In this implementation sha256 is the hash function being used. The signature is returned as a tuple by `sign` and also printed.
 
 ```
 >>> msg = 'this is an important message'
@@ -95,7 +95,7 @@ True
 False
 ```
 
-*Big Example*: The curve used to verify Bitcoin transactions is known as secp256k1. Often when you hear 'curve' in the context of elliptic curve cryptography, that usually means the whole curve, field, and point triple. Indeed, secp256k1 does refer to all of that stuff. It's not hard to find out the details with a few minutes of internetting and converting things to decimal.
+*Big Example*: The curve used to verify Bitcoin transactions is known as secp256k1. Often when you hear 'curve' in the context of elliptic curve cryptography, that usually means the curve, field, and point. Indeed, secp256k1 does refer to all of that stuff. It's not hard to find out the details with a few minutes of internetting and converting things to decimal.
 
 ```
 >>> C = Curve(0, 0, 7, 2**256-2**32-2**9-2**8-2**7-2**6-2**4-1)
@@ -124,6 +124,46 @@ True
 False
 ```
 
-When you see these numbers in the wild, they are typically given in hex. In the case of Bitcoin, the private key d is stored in hex in a Bitcoin wallet, and the public key Q goes through a [hashing procedure](https://en.bitcoin.it/wiki/Technical_background_of_version_1_Bitcoin_addresses) and gets converted to base 58, resulting in a Bitcoin address.
+When you see these numbers in the wild, they are typically given in hex. In the case of Bitcoin, the private key d is stored in hex in a Bitcoin wallet, and the public key Q goes through a [hashing procedure](https://en.bitcoin.it/wiki/Technical_background_of_version_1_Bitcoin_addresses) and gets converted to base 58. That's what a Bitcoin address is, a point on the elliptic curve y^2 = x^3 + 7 over a really big finite field after being eaten by sha256 a few times and converted to base 58. Cool.
 
-Now you really know what a Bitcoin address is! It's a point on the elliptic curve y^2 = x^3 + 7 over a really big finite field after being eaten by sha256 a few times and converted to base 58. Cool.
+Also included in the module are a few methods of solving Q = dP for the the private key d. The group defined by the curve and point below is small enough for brute forcing to succeed, but large enough that it takes a while, and so provides a nice context for comparing these key cracking methods.
+
+```
+>>> C = Curve(0, 1, 7, 729787)
+y^2 = x^3 + x + 7 over F_729787
+>>> P = Point(1,3)
+>>> C.order
+730819
+>>> n = 730819
+>>> (d, Q) = generate_keypair(C, P, n)
+Priv key: d = 462634
+Publ key: Q = (254414,526642)
+```
+
+The slowest method by far is simply by brute forcing all possible values of d, which can be done with the `crack_brute_force` function.
+
+```
+>>> crack_brute_force(C, P, n, Q)
+Priv key: d = 462634
+Time: 189.058 secs
+```
+
+The baby-step giant-step method works by using a hash table to trade space for time. It's particularly easy to implement since python has hash tables nicely built in as dictionaries.
+
+```
+>>> crack_baby_giant(C, P, n, Q)
+Priv key: d = 462634
+Time: 0.421 secs
+```
+
+In this example, the baby-step giant-step method performs very well, but in larger examples the memory requirements become problematic, and simply constructing the hash table can take an enourmous amount of time. At some point the time-space tradeoff becomes unfeasible however you slice it.
+
+Pollard's rho method manages to acheive the same aymptotic time complexity while eschewing the memory issues completely. It incorporates a clever idea called the [tortoise and hare algorithm](https://en.wikipedia.org/wiki/Cycle_detection#Tortoise_and_hare) to find two distinct linear combinations of P and Q that produce the same point, so aP + bQ = cP + dQ. Isolating Q yields the private key.
+
+```
+>>> crack_rho(C, P, n, Q)
+Priv key: d = 462634
+Time: 0.031 secs
+```
+
+Finally, there is a method to recover the private key from a pair of messages signed using the same value of k, called `crack_from_ECDSA_repeat_k`. This is a very quick calculation, only a few lines of modular arithmetic.
