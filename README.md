@@ -5,7 +5,7 @@ Arithmetic on elliptic curves and introduction to ECDSA in Python.
 
 *Disclaimer*: This module is a tool for learning about elliptic curves and elliptic curve cryptography. It provides a fully functional implementation of ECDSA, but don't use it as anything other than a sandbox. Even if the math is correct there are many [subtle and important implementation details](http://safecurves.cr.yp.to/index.html) required for private key security that I haven't thought about.
 
-You can find a really nice introduction to elliptic curve cryptography on [Andrea Corbelli's blog](http://andrea.corbellini.name/2015/05/17/elliptic-curve-cryptography-a-gentle-introduction/).
+You can find a really nice introduction to elliptic curve cryptography on [Andrea Corbellini's blog](http://andrea.corbellini.name/2015/05/17/elliptic-curve-cryptography-a-gentle-introduction/).
 
 To use this module, start by defining a Weierstrass curve over a field of prime characteristic, or over the rationals. `Curve(a,b,c,p)` will define an elliptic curve with Weierstrass form y^2 = x^3 + ax^2 + bx + c over F_p. `Curve(a,b,c,0)` will define a curve with the same equation over the rationals.
 
