@@ -3,6 +3,7 @@
 
 from fractions import Fraction
 from math import ceil, sqrt
+from random import SystemRandom
 from random import randrange
 from hashlib import sha256
 from time import clock
@@ -354,10 +355,11 @@ def hash_and_truncate(message, n):
     b = bin(h)[2:len(bin(n))]
     return int(b, 2)
 
-#Generate a keypair using the point P of order n on the given curve. The priveate key is a
+#Generate a keypair using the point P of order n on the given curve. The private key is a
 #positive integer d smaller than n, and the public key is Q = dP.
 def generate_keypair(curve, P, n):
-    d = randrange(1, n)
+    sysrand = SystemRandom()
+    d = sysrand.randrange(1, n)
     Q = curve.mult(P, d)
     print "Priv key: d = " + str(d)
     print "Publ key: Q = " + str(Q)
