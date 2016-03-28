@@ -371,6 +371,8 @@ def generate_keypair(curve, P, n):
     sysrand = SystemRandom()
     d = sysrand.randrange(1, n)
     Q = curve.mult(P, d)
+    print "Priv key: d = " + str(d)
+    print "Publ key: Q = " + str(Q)
     return (d, Q)
 
 #Create a digital signature for the string message using a given curve with a distinguished
