@@ -3,25 +3,25 @@ mini_ecdsa
 
 Arithmetic on elliptic curves and introduction to ECDSA in Python.
 
-*Disclaimer*: This module is a tool for learning about elliptic curves and elliptic curve cryptography. It provides a fully functional implementation of ECDSA, but don't use it as anything other than a sandbox. Even if the math is correct there are many [subtle and important implementation details](http://safecurves.cr.yp.to/index.html) required for private key security that I haven't thought about.
+*Disclaimer*: This module is a tool for learning about elliptic curves and elliptic curve cryptography. It provides a fully functional implementation of ECDSA, but don't use it as anything other than a sandbox. There are many [subtle and important implementation details](http://safecurves.cr.yp.to/index.html) that I haven't thought about.
 
 You can find a really nice introduction to elliptic curve cryptography on [Andrea Corbellini's blog](http://andrea.corbellini.name/2015/05/17/elliptic-curve-cryptography-a-gentle-introduction/).
 
-To use this module, start by defining an elliptic curve in Weierstrass form over a field of prime characteristic, or the rationals. `Curve(a,b,c,p)` will define an elliptic curve with Weierstrass form y^2 = x^3 + ax^2 + bx + c over F_p. `Curve(a,b,c,0)` will define a curve with the same equation over the rationals.
+To use this module, start by defining an elliptic curve over a field of prime characteristic, or over the rationals. `Curve(a,b,c,p)` will define an elliptic curve from the equation y^2 = x^3 + ax^2 + bx + c over F_p. `Curve(a,b,c,0)` will define a curve using the same equation over the rationals.
 
 ```
 >>> C = Curve(2, 0, 1, 7)
 y^2 = x^3 + 2x^2 + 1 over F_7
 ```
 
-To see a list of all finite order rational points on the curve, use `C.show_points()`. This will produce a nicely printed set of points. To return a list of point objects, use `C.get_points()`.
+To see a list of all finite order rational points on the curve, use `C.show_points()`. This will produce a nicely printed set of points. To return a list of point objects, use `C.get_points()`. *Warning:* These functions are very computationally intensive. Use them only on curves with small discriminant, or when working over a small finite field.
 
 ```
 >>> C.show_points()
 ['Inf', '(0,1)', '(0,6)', '(1,2)', '(1,5)', '(3,2)', '(3,5)', '(5,1)', '(5,6)', '(6,3)', '(6,4)']
 ```
 
-When working over the rational numbers, calling `C.torsion_group()` will classify the group of finite order rational points on the curve, with the help of Mazur's theorem. *Warning:* This is a work in progress. Calling this function will fill your machine's memory up and cause it to hang unless the curve has a very small discriminant, so be careful. Let's say we want to see the group of torsion points on the curve y^2 = x^3 + x + 2.
+Calling `C.torsion_group()` will classify the group of finite order rational points on a curve defined over Q, with the help of [Mazur's theorem](https://en.wikipedia.org/wiki/Torsion_conjecture#Elliptic_curves). Let's say we want to see the group of torsion points on the curve y^2 = x^3 + x + 2.
 
 ```
 >>> C = Curve(0, 1, 2, 0)

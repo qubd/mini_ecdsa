@@ -21,6 +21,11 @@ class Point(object):
         P.inf = True
         return P
 
+    #The secp256k1 generator.
+    @classmethod
+    def secp256k1(cls):
+        return cls(55066263022277343669578718895168534326250603453777594175500187360389116729240, 32670510020758816978083085130507043184471273380659243275938904335757337482424)
+
     def __str__(self):
         if self.inf:
             return 'Inf'
@@ -51,6 +56,11 @@ class Curve(object):
         self.a, self.b, self.c = a, b, c
         self.char = char
         print(self)
+
+    #The secp256k1 curve.
+    @classmethod
+    def secp256k1(cls):
+        return cls(0, 0, 7, 2**256-2**32-2**9-2**8-2**7-2**6-2**4-1)
 
     def __str__(self):
         #Lots of cases for pretty printing.
@@ -361,8 +371,6 @@ def generate_keypair(curve, P, n):
     sysrand = SystemRandom()
     d = sysrand.randrange(1, n)
     Q = curve.mult(P, d)
-    print "Priv key: d = " + str(d)
-    print "Publ key: Q = " + str(Q)
     return (d, Q)
 
 #Create a digital signature for the string message using a given curve with a distinguished
