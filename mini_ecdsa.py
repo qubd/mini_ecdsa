@@ -61,11 +61,6 @@ class Curve(object):
         self.char, self.exp = char, exp
         print self
 
-    #The secp256k1 curve.
-    @classmethod
-    def secp256k1(cls):
-        return cls(0, 0, 7, 2**256-2**32-2**9-2**8-2**7-2**6-2**4-1)
-
     def __str__(self):
         #Lots of cases for pretty printing.
         if self.a == 0:
@@ -293,6 +288,11 @@ class CurveOverFp(Curve):
     #Construct a Weierstrass cubic y^2 = x^3 + ax^2 + bx + c over Fp.
     def __init__(self, a, b, c, p):
         Curve.__init__(self, a, b, c, p, 1)
+
+    #The secp256k1 curve.
+    @classmethod
+    def secp256k1(cls):
+        return cls(0, 0, 7, 2**256-2**32-2**9-2**8-2**7-2**6-2**4-1)
 
     def contains(self, P):
         if P.is_infinite():
