@@ -46,12 +46,6 @@ class Point(object):
     def is_infinite(self):
         return self.inf
 
-    def negative(self):
-        if self.inf():
-            return self
-        else:
-            return Point(self.x,-self.y)
-
 #Elliptic Curves over any Field ------------------------------------------------------------------
 
 class Curve(object):
@@ -479,7 +473,7 @@ def crack_baby_giant(curve, P, n, Q):
     #Check if Q - gmP is in the hash table for all 0 < g < m. If we get such a matching hash,
     #we have Q - gmP = bP, so extract b from the dictionary, then Q = (b + gm)P.
     for g in range(m):
-        R = curve.add(Q, (curve.mult(P, g*m)).negative())
+        R = curve.add(Q, curve.invert(curve.mult(P, g*m)))
         if str(R) in baby_table.keys():
             b = baby_table[str(R)]
             end_time = clock()
