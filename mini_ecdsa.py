@@ -8,6 +8,8 @@ from random import randrange
 from hashlib import sha256
 from time import clock
 
+#Affine Point (+Infinity) on an Elliptic Curve ---------------------------------------------------
+
 class Point(object):
     #Construct a point with two given coordindates.
     def __init__(self, x, y):
@@ -24,7 +26,8 @@ class Point(object):
     #The secp256k1 generator.
     @classmethod
     def secp256k1(cls):
-        return cls(55066263022277343669578718895168534326250603453777594175500187360389116729240, 32670510020758816978083085130507043184471273380659243275938904335757337482424)
+        return cls(55066263022277343669578718895168534326250603453777594175500187360389116729240,
+                   32670510020758816978083085130507043184471273380659243275938904335757337482424)
 
     def __str__(self):
         if self.inf:
@@ -34,9 +37,9 @@ class Point(object):
 
     def __eq__(self,other):
         if self.inf:
-            return self.inf == other.inf
+            return other.inf
         elif other.inf:
-            return self.inf == other.inf
+            return self.inf
         else:
             return self.x == other.x and self.y == other.y
 
@@ -44,18 +47,19 @@ class Point(object):
         return self.inf
 
     def negative(self):
-        if self.is_infinite():
+        if self.inf():
             return self
         else:
             return Point(self.x,-self.y)
 
+#Elliptic Curves over any Field ------------------------------------------------------------------
+
 class Curve(object):
-    #Construct a Weierstrass cubic y^2 = x^3 + ax^2 + bx + c over a field of prime
-    #characteristic, or over the rationals (characteristic zero). Print to confirm.
-    def __init__(self, a, b, c, char):
+    #Set attributes of a general Weierstrass cubic y^2 = x^3 + ax^2 + bx + c over any field.
+    def __init__(self, a, b, c, char, exp):
         self.a, self.b, self.c = a, b, c
-        self.char = char
-        print(self)
+        self.char, self.exp = char, exp
+        print self
 
     #The secp256k1 curve.
     @classmethod
@@ -99,192 +103,22 @@ class Curve(object):
         if self.char == 0:
             return self.eq + ' over Q'
         else:
-            return self.eq + ' over ' + 'F_' + str(self.char)
+            return self.eq + ' over ' + 'F_' + str(self.char**self.exp)
 
     #Compute the discriminant.
     def discriminant(self):
         a, b, c = self.a, self.b, self.c
         return -4*a*a*a*c + a*a*b*b + 18*a*b*c - 4*b*b*b - 27*c*c
 
-    #Is the point P on the curve?
-    def contains(self, P):
-        if P.inf:
-            return True
-        elif self.char == 0:
-            return P.y*P.y == P.x*P.x*P.x + self.a*P.x*P.x + self.b*P.x + self.c
-        else:
-            return (P.y*P.y) % self.char == (P.x*P.x*P.x + self.a*P.x*P.x + self.b*P.x + self.c) % self.char
-
-    #Returns a list of all rational points on the curve.
-    def get_points(self):
-        #Start with the point at infinity.
-        points = [Point.atInfinity()]
-
-        if self.char == 0:
-            #The only possible y values are divisors of the discriminant (Nagell-Lutz).
-            for y in divisors(self.discriminant()):
-                #Each possible y value yields a monic cubic polynomial in x, whose roots
-                #must divide the constant term.
-                const_term = self.c - y*y
-                if const_term != 0:
-                    for x in divisors(const_term):
-                        P = Point(x,y)
-                        if 0 == x*x*x + self.a*x*x + self.b*x + const_term and self.has_finite_order(P):
-                            points.append(P)
-                #If the constant term is zero, factor out x and look for rational roots
-                #of the resulting quadratic polynomial. Any such roots must divide b.
-                elif self.b != 0:
-                    for x in divisors(self.b):
-                        P = Point(x,y)
-                        if 0 == x*x*x+self.a*x*x+self.b*x+const_term and self.has_finite_order(P):
-                            points.append(P)
-                #If the constant term and b are both zero, factor out x^2 and look for rational
-                #roots of the resulting linear polynomial. Any such roots must divide a.
-                elif self.a != 0:
-                     for x in divisors(self.a):
-                        P = Point(x,y)
-                        if 0 == x*x*x+self.a*x*x+self.b*x+const_term and self.has_finite_order(P):
-                            points.append(P)
-                #If the constant term, b, and a are all zero, we have 0 = x^3 + c - y^2 with
-                #const_term = c - y^2 = 0, so (0,y) is a point on the curve.
-                else:
-                    points.append(Point(0,y))
-
-            #Ensure that there are no duplicates in our list of points.
-            unique_points = []
-
-            for P in points:
-                addP = True
-                for Q in unique_points:
-                    if P == Q:
-                        addP = False
-                if addP:
-                    unique_points.append(P)
-
-            return unique_points
-
-        #If we're working over a prime characteristic field, just brute force it, trying
-        #every possible point.
-        else:
-            for x in range(self.char):
-                for y in range(self.char):
-                    P = Point(x,y)
-                    if (y*y) % self.char == (x*x*x + self.a*x*x + self.b*x + self.c) % self.char:
-                        points.append(P)
-
-            return points
-
-    #Returns a pretty printed list of points.
-    def show_points(self):
-        return [str(P) for P in self.get_points()]
-
-    #Add two points on the curve.
-    def add(self, P_1, P_2):
-        #Adding over Q.
-        if self.char == 0:
-            y_diff = P_2.y - P_1.y
-            x_diff = P_2.x - P_1.x
-
-            if P_1.inf:
-                return P_2
-            if P_2.inf:
-                return P_1
-            elif x_diff == 0 and y_diff != 0:
-                return Point.atInfinity()
-            elif x_diff == 0 and y_diff == 0:
-                if P_1.y == 0:
-                    return Point.atInfinity()
-                else:
-                    ld = Fraction(3*P_1.x*P_1.x + 2*self.a*P_1.x + self.b, 2*P_1.y)
-            else:
-                ld = Fraction(y_diff, x_diff)
-
-            nu = P_1.y - ld*P_1.x
-            x = ld*ld - self.a  -P_1.x - P_2.x
-            y = -ld*x - nu
-
-            return Point(x,y)
-
-        #Adding over a prime characteristic field. The procedure is exactly the same
-        #but the arithmetic happens in a finite field.
-        else:
-            y_diff = (P_2.y - P_1.y) % self.char
-            x_diff = (P_2.x - P_1.x) % self.char
-
-            if P_1.inf:
-                return P_2
-            if P_2.inf:
-                return P_1
-            elif x_diff == 0 and y_diff != 0:
-                return Point.atInfinity()
-            elif x_diff == 0 and y_diff == 0:
-                if P_1.y == 0:
-                    return Point.atInfinity()
-                else:
-                    ld = ((3*P_1.x*P_1.x + 2*self.a*P_1.x + self.b) * mult_inv(2*P_1.y, self.char)) % self.char
-            else:
-                ld = (y_diff * mult_inv(x_diff, self.char)) % self.char
-
-            nu = (P_1.y - ld*P_1.x) % self.char
-            x = (ld*ld - self.a - P_1.x - P_2.x) % self.char
-            y = (-ld*x - nu) % self.char
-
-            return Point(x,y)
-
-    #Double a point on the curve.
-    def double(self, P):
-        return self.add(P,P)
-
-    #Add P to itself k times.
-    def mult(self, P, k):
-        if P.is_infinite():
-            return P
-        elif k == 0:
-            return Point.atInfinity()
-        elif k < 0:
-            return self.mult(Point(P.x,-P.y % self.char), -k)
-        else:
-            #Convert k to a bitstring and use repeated doubling to compute the product quickly.
-            b = bin(k)[2:]
-            return self.repeat_additions(P, b, 1)
-
-    #Add efficiently by repeatedly doubling the given point, and adding the result to a running
-    #total when, after the i doubling, the ith digit in the bitstring b is a one.
-    def repeat_additions(self, P, b, n):
-        if b == '0':
-            return Point.atInfinity()
-        elif b == '1':
-            return P
-        elif b[-1] == '0':
-            return self.repeat_additions(self.double(P), b[:-1], n+1)
-        elif b[-1] == '1':
-            return self.add(P, self.repeat_additions(self.double(P), b[:-1], n+1))
-
-    #Find the order of a point on the curve by brute force.
+    #Compute the order of a point on the curve.
     def order(self, P):
         Q = P
         orderP = 1
         #Add P to Q repeatedly until obtaining the identity (point at infinity).
-        while not Q.inf:
+        while not Q.is_infinite():
             Q = self.add(P,Q)
             orderP += 1
-            if self.char == 0:
-                #If we ever obtain non integer coordinates, the point must have infinite order
-                #by Nagell-Lutz.
-                if Q.x != int(Q.x) or Q.y != int(Q.y):
-                    return -1
-                #Moreover, all finite order points have order at most 12 by Mazur's theorem.
-                if orderP > 12:
-                    return -1
-
         return orderP
-
-    #Check if a point on the curve has finite order.
-    def has_finite_order(self, P):
-        if self.char == 0:
-            return not self.order(P) == -1
-        else:
-            return True
 
     #List all multiples of a point on the curve.
     def generate(self, P):
@@ -297,27 +131,226 @@ class Curve(object):
 
         return orbit
 
-    #Classify the torsion group of an elliptic curve, appealing to Mazur's Theorem.
-    def torsion_group(self):
-        #This classification only applies to curves defined over Q.
-        if self.char != 0:
-            print 'Use this method for curves over Q only.'
+    #Double a point on the curve.
+    def double(self, P):
+        return self.add(P,P)
+
+    #Add P to itself k times.
+    def mult(self, P, k):
+        if P.is_infinite():
+            return P
+        elif k == 0:
+            return Point.atInfinity()
+        elif k < 0:
+            return self.mult(self.invert(P), -k)
         else:
-            highest_order = 1
-            #Find the rational point with the highest order.
-            for P in self.get_points():
-                if self.order(P) > highest_order:
-                    highest_order = self.order(P)
+            #Convert k to a bitstring and use peasant multiplication to compute the product quickly.
+            b = bin(k)[2:]
+            return self.repeat_additions(P, b, 1)
 
-            #If this point generates the entire torsion group, the torsion group is cyclic.
-            if highest_order == len(self.get_points()):
-                print 'Z/' + str(highest_order) + 'Z'
-            #If not, by Mazur's Theorem the torsion group must be a direct product of Z/2Z
-            #with the cyclic group generated by the highest order point.
+    #Add efficiently by repeatedly doubling the given point, and adding the result to a running
+    #total when, after the ith doubling, the ith digit in the bitstring b is a one.
+    def repeat_additions(self, P, b, n):
+        if b == '0':
+            return Point.atInfinity()
+        elif b == '1':
+            return P
+        elif b[-1] == '0':
+            return self.repeat_additions(self.double(P), b[:-1], n+1)
+        elif b[-1] == '1':
+            return self.add(P, self.repeat_additions(self.double(P), b[:-1], n+1))
+
+    #Returns a pretty printed list of points.
+    def show_points(self):
+        return [str(P) for P in self.get_points()]
+
+#Elliptic Curves over Q --------------------------------------------------------------------------
+
+class CurveOverQ(Curve):
+    #Construct a Weierstrass cubic y^2 = x^3 + ax^2 + bx + c over Q.
+    def __init__(self, a, b, c):
+        Curve.__init__(self, a, b, c, 0, 0)
+
+    def contains(self, P):
+        if P.is_infinite():
+            return True
+        else:
+            return P.y*P.y == P.x*P.x*P.x + self.a*P.x*P.x + self.b*P.x + self.c
+
+    def get_points(self):
+        #Start with the point at infinity.
+        points = [Point.atInfinity()]
+        #The only possible y values are divisors of the discriminant.
+        for y in divisors(self.discriminant()):
+            #Each possible y value yields a monic cubic polynomial in x, whose roots
+            #must divide the constant term.
+            const_term = self.c - y*y
+            if const_term != 0:
+                for x in divisors(const_term):
+                    P = Point(x,y)
+                    if 0 == x*x*x + self.a*x*x + self.b*x + const_term and self.has_finite_order(P):
+                        points.append(P)
+            #If the constant term is zero, factor out x and look for rational roots
+            #of the resulting quadratic polynomial. Any such roots must divide b.
+            elif self.b != 0:
+                for x in divisors(self.b):
+                    P = Point(x,y)
+                    if 0 == x*x*x+self.a*x*x+self.b*x+const_term and self.has_finite_order(P):
+                        points.append(P)
+            #If the constant term and b are both zero, factor out x^2 and look for rational
+            #roots of the resulting linear polynomial. Any such roots must divide a.
+            elif self.a != 0:
+                 for x in divisors(self.a):
+                    P = Point(x,y)
+                    if 0 == x*x*x+self.a*x*x+self.b*x+const_term and self.has_finite_order(P):
+                        points.append(P)
+            #If the constant term, b, and a are all zero, we have 0 = x^3 + c - y^2 with
+            #const_term = c - y^2 = 0, so (0,y) is a point on the curve.
             else:
-                print 'Z/2Z x ' + 'Z/' + str(highest_order) + 'Z'
+                points.append(Point(0,y))
 
-            print C.show_points()
+        #Ensure that there are no duplicates in our list of points.
+        unique_points = []
+        for P in points:
+            addP = True
+            for Q in unique_points:
+                if P == Q:
+                    addP = False
+            if addP:
+                unique_points.append(P)
+
+        return unique_points
+
+    def invert(self, P):
+        if P.is_infinite():
+            return P
+        else:
+            return Point(P.x, -P.y)
+
+    def add(self, P_1, P_2):
+        y_diff = P_2.y - P_1.y
+        x_diff = P_2.x - P_1.x
+
+        if P_1.is_infinite():
+            return P_2
+        elif P_2.is_infinite():
+            return P_1
+        elif x_diff == 0 and y_diff != 0:
+            return Point.atInfinity()
+        elif x_diff == 0 and y_diff == 0:
+            if P_1.y == 0:
+                return Point.atInfinity()
+            else:
+                ld = Fraction(3*P_1.x*P_1.x + 2*self.a*P_1.x + self.b, 2*P_1.y)
+        else:
+            ld = Fraction(y_diff, x_diff)
+
+        nu = P_1.y - ld*P_1.x
+        x = ld*ld - self.a  -P_1.x - P_2.x
+        y = -ld*x - nu
+
+        return Point(x,y)
+
+    def order(self, P):
+        Q = P
+        orderP = 1
+        #Add P to Q repeatedly until obtaining the point at infinity.
+        while not Q.is_infinite():
+            Q = self.add(P,Q)
+            orderP += 1
+            #If we ever obtain non integer coordinates, the point has infinite order.
+            if Q.x != int(Q.x) or Q.y != int(Q.y):
+                return -1
+            #Moreover, all finite order points have order at most 12 by Mazur's theorem.
+            if orderP > 12:
+                return -1
+
+        return orderP
+
+    def has_finite_order(self, P):
+            return not self.order(P) == -1
+
+    def torsion_group(self):
+        highest_order = 1
+        #Find the rational point with the highest order.
+        for P in self.get_points():
+            if self.order(P) > highest_order:
+                highest_order = self.order(P)
+
+        #If this point generates the entire torsion group, the torsion group is cyclic.
+        if highest_order == len(self.get_points()):
+            print 'Z/' + str(highest_order) + 'Z'
+        #If not, by Mazur's Theorem the torsion group must be a direct product of Z/2Z
+        #with the cyclic group generated by the highest order point.
+        else:
+            print 'Z/2Z x ' + 'Z/' + str(highest_order) + 'Z'
+
+        print C.show_points()
+
+#Elliptic Curves over Prime Order Fields ---------------------------------------------------------
+
+class CurveOverFp(Curve):
+    #Construct a Weierstrass cubic y^2 = x^3 + ax^2 + bx + c over Fp.
+    def __init__(self, a, b, c, p):
+        Curve.__init__(self, a, b, c, p, 1)
+
+    def contains(self, P):
+        if P.is_infinite():
+            return True
+        else:
+            return (P.y*P.y) % self.char == (P.x*P.x*P.x + self.a*P.x*P.x + self.b*P.x + self.c) % self.char
+
+    def get_points(self):
+        #Start with the point at infinity.
+        points = [Point.atInfinity()]
+
+        #Just brute force the rest.
+        for x in range(self.char):
+                for y in range(self.char):
+                    P = Point(x,y)
+                    if (y*y) % self.char == (x*x*x + self.a*x*x + self.b*x + self.c) % self.char:
+                        points.append(P)
+        return points
+
+    def invert(self, P):
+        if P.is_infinite():
+            return P
+        else:
+            return Point(P.x, -P.y % self.char)
+
+    def add(self, P_1, P_2):
+        y_diff = (P_2.y - P_1.y) % self.char
+        x_diff = (P_2.x - P_1.x) % self.char
+
+        if P_1.is_infinite():
+            return P_2
+        elif P_2.is_infinite():
+            return P_1
+        elif x_diff == 0 and y_diff != 0:
+            return Point.atInfinity()
+        elif x_diff == 0 and y_diff == 0:
+            if P_1.y == 0:
+                return Point.atInfinity()
+            else:
+                ld = ((3*P_1.x*P_1.x + 2*self.a*P_1.x + self.b) * mult_inv(2*P_1.y, self.char)) % self.char
+        else:
+            ld = (y_diff * mult_inv(x_diff, self.char)) % self.char
+
+        nu = (P_1.y - ld*P_1.x) % self.char
+        x = (ld*ld - self.a - P_1.x - P_2.x) % self.char
+        y = (-ld*x - nu) % self.char
+
+        return Point(x,y)
+
+#Elliptic Curves over Prime Power Order Fields ---------------------------------------------------
+
+class CurveOverFq(Curve):
+    #Construct a Weierstrass cubic y^2 = x^3 + ax^2 + bx + c over Fp^n.
+    def __init__(self, a, b, c, p, n, irred_poly):
+        self.irred_poly = irred_poly
+        Curve.__init__(self, a, b, c, p, n)
+
+    #TODO: Implement it!
 
 #Number Theoretic Functions ----------------------------------------------------------------------
 
@@ -399,7 +432,7 @@ def verify(message, curve, P, n, sig):
     Q, r, s = sig
 
     #Confirm that Q is on the curve.
-    if Q.inf or not curve.contains(Q):
+    if Q.is_infinite() or not curve.contains(Q):
         return False
     #Confirm that Q has order that divides n.
     if not curve.mult(Q,n).is_infinite():
