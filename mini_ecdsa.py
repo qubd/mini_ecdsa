@@ -56,7 +56,7 @@ class Curve(object):
         print self
 
     def __str__(self):
-        #Lots of cases for pretty printing.
+        #Making the equation look nice. Lots of cases.
         if self.a == 0:
             aTerm = ''
         elif self.a == 1:
@@ -91,8 +91,10 @@ class Curve(object):
         #Print prettily.
         if self.char == 0:
             return self.eq + ' over Q'
+        elif self.exp == 1:
+            return self.eq + ' over ' + 'F_' + str(self.char)
         else:
-            return self.eq + ' over ' + 'F_' + str(self.char**self.exp)
+            return self.eq + ' over ' + 'F_' + str(self.char) + '^' + str(self.exp)
 
     #Compute the discriminant.
     def discriminant(self):
@@ -240,6 +242,7 @@ class CurveOverQ(Curve):
 
         return Point(x,y)
 
+    #Use the Nagell-Lutz Theorem and Mazur's Theorem to potentially save time.
     def order(self, P):
         Q = P
         orderP = 1
@@ -250,7 +253,7 @@ class CurveOverQ(Curve):
             #If we ever obtain non integer coordinates, the point has infinite order.
             if Q.x != int(Q.x) or Q.y != int(Q.y):
                 return -1
-            #Moreover, all finite order points have order at most 12 by Mazur's theorem.
+            #Moreover, all finite order points have order at most 12.
             if orderP > 12:
                 return -1
 
@@ -357,17 +360,18 @@ def divisors(n):
     return divs
 
 #Extended Euclidean algorithm.
-def euclid(a, b):
-    #When the remainder is zero, it's done. The gcd is b.
-    if a == 0:
-        #In this case, gcd(a,b) = 0*a + 1*b.
-        return (b, 0, 1)
+def euclid(sml, big):
+    #When the smaller value is zero, it's done, gcd = b = 0*sml + 1*big.
+    if sml == 0:
+        return (big, 0, 1)
     else:
-        #Repeat with a and the remainder, b%a.
-        g, y, x = euclid(b % a, a)
-        #Backtrack through the calculation, keeping the gcd and rewriting the smallest value
-        #in terms of larger ones.
-        return (g, x - (b//a)*y, y)
+        #Repeat with a and the remainder, big%sml.
+        g, y, x = euclid(big % sml, sml)
+        #Backtrack through the calculation, keeping the gcd and rewriting it.
+        #Note big = (big%sml) + (big//sml)*sml, so big%sml = big - (big//sml)*sml.
+        #If the values just returned are correct, we have gcd = y*(big%sml) + x*sml
+        #so gcd = y*(big - (big//sml)*sml) + x*sml = (x-(big//sml)*y)*sml + y*big.
+        return (g, x - (big//sml)*y, y)
 
 #Compute the multiplicative inverse mod n of a with 0 < a < n.
 def mult_inv(a, n):
