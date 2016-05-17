@@ -365,12 +365,11 @@ def euclid(sml, big):
     if sml == 0:
         return (big, 0, 1)
     else:
-        #Repeat with a and the remainder, big%sml.
+        #Repeat with sml and the remainder, big%sml.
         g, y, x = euclid(big % sml, sml)
-        #Backtrack through the calculation, keeping the gcd and rewriting it.
-        #Note big = (big%sml) + (big//sml)*sml, so big%sml = big - (big//sml)*sml.
-        #If the values just returned are correct, we have gcd = y*(big%sml) + x*sml
-        #so gcd = y*(big - (big//sml)*sml) + x*sml = (x-(big//sml)*y)*sml + y*big.
+        #Backtrack through the calculation, rewriting the gcd as we go. From the values just
+        #returned above, we have gcd = y*(big%sml) + x*sml, and rewriting big%sml we obtain
+        #gcd = y*(big - (big//sml)*sml) + x*sml = (x - (big//sml)*y)*sml + y*big.
         return (g, x - (big//sml)*y, y)
 
 #Compute the multiplicative inverse mod n of a with 0 < a < n.
