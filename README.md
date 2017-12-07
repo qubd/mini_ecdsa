@@ -134,34 +134,34 @@ y^2 = x^3 + x + 7 over F_729787
 >>> P = Point(1,3)
 >>> n = C.order(P)
 >>> (d, Q) = generate_keypair(C, P, n)
-Priv key: d = 462634
-Publ key: Q = (254414,526642)
+Priv key: d = 692847
+Publ key: Q = (257099,102580)
 ```
 
 The `crack_brute_force` function will simply try all possible values of d in increasing order until Q = dP.
 
 ```
 >>> crack_brute_force(C, P, n, Q)
-Priv key: d = 462634
-Time: 189.058 secs
+Priv key: d = 692847
+Time: 177.963 secs
 ```
 
 The baby-step giant-step method works by using a hash table to trade space for time. It's particularly easy to implement since python has hash tables nicely built in as dictionaries.
 
 ```
 >>> crack_baby_giant(C, P, n, Q)
-Priv key: d = 462634
-Time: 0.421 secs
+Priv key: d = 692847
+Time: 0.356 secs
 ```
 
 In this example, the baby-step giant-step method performs well, but in larger examples the memory requirements become problematic, and simply constructing the hash table can take an enourmous amount of time. At some point the time-space tradeoff becomes unfeasible however you slice it.
 
-Pollard's rho method manages to acheive the same aymptotic time complexity while eschewing the memory issues completely. It incorporates a clever idea called the [tortoise and hare algorithm](https://en.wikipedia.org/wiki/Cycle_detection#Tortoise_and_hare) to find two distinct linear combinations of P and Q that produce the same point, so aP + bQ = cP + dQ. Isolating Q yields the private key.
+Pollard's rho method manages to acheive the same aymptotic time complexity while eschewing the memory issues completely. It incorporates a clever idea called the [tortoise and hare algorithm](https://en.wikipedia.org/wiki/Cycle_detection#Tortoise_and_hare) to find two distinct linear combinations of P and Q that produce the same point, so aP + bQ = cP + dQ. Isolating Q yields the private key. The last argument to the function, `bits`, is used to create a small list of randomly generated linear combinations of P and Q, of length 2^bits. This list is then used to define an iterating function on the curve (for details, see section 4.1.2 of Menezes, Hankerson, and Vanstone's Guide to Elliptic Curve Cryptography).
 
 ```
->>> crack_rho(C, P, n, Q)
-Priv key: d = 462634
-Time: 0.031 secs
+>>> crack_rho(C, P, n, Q, 4)
+Priv key: d = 692847
+Time: 0.077 secs
 ```
 
 Finally, there is a method to recover the private key from a pair of messages signed using the same value of k, called `crack_from_ECDSA_repeat_k`. This is a very quick calculation, using only a few lines of modular arithmetic and no iteration or arithmetic on the curve at all.
