@@ -7,7 +7,13 @@ Arithmetic on elliptic curves and introduction to ECDSA in Python.
 
 You can find a really nice introduction to elliptic curve cryptography on [Andrea Corbellini's blog](http://andrea.corbellini.name/2015/05/17/elliptic-curve-cryptography-a-gentle-introduction/).
 
-To use this module, start by defining an elliptic curve over a field of prime characteristic, or over the rationals. `CurveOverFp(a,b,c,p)` will define an elliptic curve from the equation y^2 = x^3 + ax^2 + bx + c over F_p. `CurveOverQ(a,b,c)` will define a curve using the same equation over the rationals.
+To play around with the module, let's open a Python console in the directory where it's stored, and execute the file so we'll have access to the classes and functions defined inside it.
+
+```
+>>> execfile('mini_ecdsa.py')
+```
+
+Start by defining an elliptic curve over a field of prime characteristic, or over the rationals. `CurveOverFp(a,b,c,p)` will define an elliptic curve from the equation y^2 = x^3 + ax^2 + bx + c over F_p. `CurveOverQ(a,b,c)` will define a curve using the same equation over the rationals.
 
 ```
 >>> C = CurveOverFp(2, 0, 1, 7)
