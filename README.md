@@ -13,7 +13,7 @@ To use this module as is, instead of importing it for use in another project, le
 >>> execfile('mini_ecdsa.py')
 ```
 
-To begin, we need to define an elliptic curve over a field of prime characteristic, or over the rationals. `CurveOverFp(a,b,c,p)` will define an elliptic curve from the equation y^2 = x^3 + ax^2 + bx + c over F_p. `CurveOverQ(a,b,c)` will define a curve using the same equation over the rationals.
+To begin, we need to define a nonsingular elliptic curve over a field of prime characteristic, or over the rationals. `CurveOverFp(a,b,c,p)` will define an elliptic curve from the equation y^2 = x^3 + ax^2 + bx + c over F_p. `CurveOverQ(a,b,c)` will define a curve using the same equation over the rationals. This module assumes the coefficients a, b, and c are integers.
 
 ```
 >>> C = CurveOverFp(2, 0, 1, 7)
