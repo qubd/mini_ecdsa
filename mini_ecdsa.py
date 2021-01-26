@@ -413,7 +413,8 @@ def sign(message, curve, P, n, keypair):
     #Choose a randomly selected secret point kP then compute r and s.
     r, s = 0, 0
     while r == 0 or s == 0:
-        k = 4
+        sysrand = SystemRandom()
+        k = sysrand.randrange(1, n)
         R = curve.mult(P, k)
         r = R.x % n
         s = (mult_inv(k, n) * (z + r*d)) % n
