@@ -101,7 +101,7 @@ True
 False
 ```
 
-*Big Example*: The curve (over a given finite field with a distinguished point) used to verify Bitcoin transactions is called secp256k1. I've been working with this curve a lot, so the classmethods `CurveOverFp.secp256k1()` and `Point.secp256k1()` are provided to save time, but you can also do it the hard way.
+*Big Example*: The curve (over a given finite field with a distinguished point) used to verify Bitcoin transactions is called secp256k1. I've been working with this curve a lot, so the classmethods `CurveOverFp.secp256k1()`, `Point.secp256k1()`, and the constant `secp256k1_order` are provided to save time, but you can also do it the hard way.
 
 ```
 >>> C = CurveOverFp(0, 0, 7, 2**256-2**32-2**9-2**8-2**7-2**6-2**4-1)

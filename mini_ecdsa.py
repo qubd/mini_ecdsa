@@ -7,6 +7,10 @@ from random import SystemRandom, randrange
 from hashlib import sha256
 from time import clock
 
+#Useful constant. The order of the subgroup defined in the secp256k1 standard.
+
+secp256k1_order = 115792089237316195423570985008687907852837564279074904382605163141518161494337
+
 #Affine Point (+Infinity) on an Elliptic Curve ---------------------------------------------------
 
 class Point(object):
