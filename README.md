@@ -10,7 +10,7 @@ You can find a really nice introduction to elliptic curve cryptography on [Andre
 To use this module as is, instead of importing it for use in another project, let's open a Python console in the directory where it's stored and run the command below.
 
 ```
->>> exec(open("./mini_ecdsa.py").read())
+>>> from mini_ecdsa import *
 ```
 
 To begin, we need to define a nonsingular elliptic curve over a field of prime characteristic, or over the rationals. `CurveOverFp(a,b,c,p)` will define an elliptic curve from the equation y^2 = x^3 + ax^2 + bx + c over F_p. `CurveOverQ(a,b,c)` will define a curve using the same equation over the rationals. This module assumes the coefficients a, b, and c are integers.
@@ -58,7 +58,7 @@ Inf
 
 ECDSA is a digital signature scheme that uses elliptic curves. It's part of SSL/TLS and so you use it every day (click the green lock next to the url in your browser). Another of its best known uses is in Bitcoin, where spending money amounts to generating a valid ECDSA signature.
 
-To use ECDSA, we need to publicly agree on a curve over a finite field (this module works exclusively with prime characteristic fields) along with a distinguished point that generates a subgroup of prime order. Why the prime order requirement on the subgroup? As part of the signing process, we'll need to find a multiplicative inverse, and the prime order requirement guarantees this will work.
+To use ECDSA, we need to publicly agree on a curve over a finite field (*this module works exclusively with prime characteristic fields*) along with a distinguished point that generates a subgroup of prime order. Why the prime order requirement on the subgroup? As part of the signing process, we'll need to find a multiplicative inverse, and the prime order requirement guarantees this will work.
 
 *Tiny Example*: Consider P = (1341,854) on the curve y^2 = x^3 + x + 1 over the field with 2833 elements.
 

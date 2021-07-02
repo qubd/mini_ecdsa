@@ -480,7 +480,7 @@ def crack_baby_giant(curve, P, n, Q):
             print("Time: " + str(round(end_time - start_time, 3)) + " secs")
             break
 
-#Find d for which Q = dP using Pollard's rho algorithm.
+#Find d for which Q = dP using Pollard's rho algorithm. Assumes subgroup has prime order n.
 def crack_rho(curve, P, n, Q, bits):
     start_time = time()
     R_list = []
@@ -517,7 +517,7 @@ def crack_rho(curve, P, n, Q, bits):
         print("Priv key: d = " + str((aT - aH) * mult_inv((bH - bT) % n, n) % n))
         print("Time: " + str(round(end_time - start_time, 3)) + " secs")
 
-#Find d by exploiting two messages signed with the same value of k.
+#Find d from two messages signed with the same nonce k. Assumes subgroup has prime order n.
 def crack_from_ECDSA_repeat_k(curve, P, n, m1, sig1, m2, sig2):
     Q1, r1, s1 = sig1
     Q2, r2, s2 = sig2
